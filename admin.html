@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แอดมิน</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="nav" id="nav"></header>
+<main class="dash">
+  <div class="container">
+    <h1 style="font-size:1.7rem;margin-bottom:18px">หลังบ้านแอดมิน</h1>
+    <div class="kpis">
+      <div class="kpi"><span>ผู้ใช้ทั้งหมด</span><b id="a-users">0</b></div>
+      <div class="kpi"><span>รายการที่สำเร็จ</span><b id="a-count">0</b></div>
+      <div class="kpi"><span>ยอดรวมทั้งระบบ (บาท)</span><b id="a-total">0</b></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <h3 style="margin-bottom:12px">ผู้ใช้</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ผู้ใช้</th><th>อีเมล</th><th>รายการ</th><th>ยอดรวม</th><th>สมัครเมื่อ</th><th></th></tr></thead>
+        <tbody id="users"></tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px">รายการโดเนทล่าสุด</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>เวลา</th><th>ผู้รับ</th><th>ผู้โดเนท</th><th>ยอด</th><th>สถานะ</th></tr></thead>
+        <tbody id="dons"></tbody>
+      </table></div>
+    </div>
+  </div>
+</main>
+<script src="/js/common.js"></script>
+<script>
+(async () => {
+  const me = await App.init({ title: 'แอดมิน' });
+  if (!me) return (location.href = '/auth#login');
+  if (me.role !== 'admin') return (location.href = '/dashboard');
+  const $ = id => document.getElementById(id);
+  const statusTh = { pending: 'รอตรวจสอบ', paid: 'สำเร็จ', rejected: 'ปฏิเสธ' };
+
+  async function load() {
+    const d = await App.api('/api/admin/overview');
+    $('a-users').textContent = App.money(d.totals.users);
+    $('a-count').textContent = App.money(d.totals.paidCount);
+    $('a-total').textContent = App.money(d.totals.paidTotal);
+
+    const ut = $('users'); ut.replaceChildren();
+    for (const u of d.users) {
+      const tr = document.createElement('tr');
+      const c = t => { const td = document.createElement('td'); td.textContent = t; tr.appendChild(td); return td; };
+      c(u.display_name + ' (@' + u.username + ')' + (u.role === 'admin' ? ' · admin' : '') + (u.banned ? ' · ระงับ' : ''));
+      c(u.email); c(App.money(u.paid_count)); c(App.money(u.paid_total) + ' ฿'); c(App.dt(u.created_at));
+      const td = document.createElement('td');
+      if (u.id !== me.id) {
+        const b = document.createElement('button'); b.className = 'btn sm ' + (u.banned ? '' : 'danger');
+        b.textContent = u.banned ? 'ปลดระงับ' : 'ระงับ';
+        b.onclick = async () => {
+          if (!u.banned && !confirm('ระงับ @' + u.username + ' ?')) return;
+          await App.api('/api/admin/users/' + u.id + '/ban', { method: 'POST', body: { banned: !u.banned } }); load();
+        };
+        td.appendChild(b);
+      }
+      tr.appendChild(td); ut.appendChild(tr);
+    }
+
+    const dt = $('dons'); dt.replaceChildren();
+    for (const x of d.donations) {
+      const tr = document.createElement('tr');
+      const c = t => { const td = document.createElement('td'); td.textContent = t; tr.appendChild(td); return td; };
+      c(App.dt(x.created_at)); c('@' + x.username); c(x.donor_name); c(App.money(x.amount) + ' ฿');
+      const td = document.createElement('td'); const sp = document.createElement('span');
+      sp.className = 'status ' + x.status; sp.textContent = statusTh[x.status]; td.appendChild(sp); tr.appendChild(td);
+      dt.appendChild(tr);
+    }
+  }
+  load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Donation Overlay</title>
+<link rel="icon" href="/img/favicon.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap');
+  html, body { margin: 0; background: transparent; overflow: hidden; font-family: 'Prompt', sans-serif; }
+  #stage { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 6vh 3vw; }
+  .alert {
+    --c: #ef2b2d; max-width: min(900px, 94vw); min-width: 360px; color: #fff; border-radius: 26px; padding: 22px 30px;
+    background: linear-gradient(135deg, rgba(20, 20, 40, .94), rgba(30, 20, 56, .94));
+    border: 2px solid var(--c); box-shadow: 0 0 0 4px rgba(255, 255, 255, .04), 0 20px 70px -10px var(--c);
+    transform: translateY(40px) scale(.92); opacity: 0; transition: transform .45s cubic-bezier(.2, 1.3, .4, 1), opacity .35s;
+  }
+  .alert.in { transform: none; opacity: 1; }
+  .alert .top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; font: 600 clamp(24px, 3.4vw, 40px) 'Prompt', sans-serif; }
+  .alert .name { color: #fff; } .alert .amt { color: var(--c); filter: brightness(1.35); }
+  .alert .txt { font-size: clamp(18px, 2.4vw, 28px); margin-top: 8px; color: #e9e9f6; word-break: break-word; line-height: 1.45; }
+  .alert .txt:empty { display: none; }
+  #unlock { position: fixed; top: 10px; right: 10px; padding: 6px 12px; border-radius: 9px; border: 0; background: #fbbf24; color: #111; font: 12px sans-serif; cursor: pointer; display: none; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="unlock">แตะเพื่อเปิดเสียง</button>
+<script>
+(() => {
+  const token = location.pathname.split('/').pop();
+  const stage = document.getElementById('stage');
+  const unlock = document.getElementById('unlock');
+  const queue = []; let busy = false;
+  let ctx = null;
+
+  function audio() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
+    if (ctx && ctx.state === 'suspended') { ctx.resume().catch(() => {}); if (ctx.state === 'suspended') unlock.style.display = 'block'; }
+    return ctx;
+  }
+  unlock.onclick = () => { audio(); unlock.style.display = 'none'; };
+  addEventListener('pointerdown', () => { audio(); unlock.style.display = 'none'; }, { once: true });
+
+  function chime() {
+    const a = audio(); if (!a) return;
+    [660, 880, 1175].forEach((f, i) => {
+      const o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.value = f;
+      const t = a.currentTime + i * 0.12;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.55);
+    });
+  }
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text); u.lang = 'th-TH'; u.rate = 1;
+      const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith('th'));
+      if (v) u.voice = v;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch (_) {}
+  }
+
+  function play(d) {
+    busy = true;
+    const el = document.createElement('div'); el.className = 'alert'; el.style.setProperty('--c', d.accent || '#ef2b2d');
+    const top = document.createElement('div'); top.className = 'top';
+    const n = document.createElement('span'); n.className = 'name'; n.textContent = d.name;
+    const mid = document.createElement('span'); mid.textContent = 'โดเนท';
+    const a = document.createElement('span'); a.className = 'amt'; a.textContent = Number(d.amount).toLocaleString('th-TH') + ' บาท';
+    top.append(n, mid, a);
+    const t = document.createElement('div'); t.className = 'txt'; t.textContent = d.message || '';
+    el.append(top, t); stage.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+    chime();
+    if (d.speak) setTimeout(() => speak(`${d.name} โดเนท ${d.amount} บาท ${d.message}`), 700);
+    setTimeout(() => {
+      el.classList.remove('in');
+      setTimeout(() => { el.remove(); busy = false; next(); }, 500);
+    }, Math.max(3, d.seconds || 8) * 1000);
+  }
+  function next() { if (!busy && queue.length) play(queue.shift()); }
+
+  function connect() {
+    const es = new EventSource('/api/overlay/' + encodeURIComponent(token) + '/stream');
+    es.addEventListener('donation', e => { try { queue.push(JSON.parse(e.data)); next(); } catch (_) {} });
+    es.onerror = () => { if (es.readyState === 2) setTimeout(connect, 5000); };
+  }
+  if ('speechSynthesis' in window) speechSynthesis.getVoices();
+  audio();
+  connect();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYP TIP - ปิดปรับปรุงระบบชั่วคราว</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: #0d0608;
+            color: #f3f4f6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Red Ambient Glow Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.08) 50%, rgba(0, 0, 0, 0) 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem 0;
+            z-index: 10;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand span {
+            background: linear-gradient(135deg, #f87171, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        main {
+            z-index: 10;
+            width: 100%;
+            max-width: 580px;
+            text-align: center;
+            margin: auto 0;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 9999px;
+            color: #fca5a5;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ef4444;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            line-height: 1.25;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .description {
+            color: #9ca3af;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(24, 15, 18, 0.75);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 1rem;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #f3f4f6;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .card-list li {
+            color: #9ca3af;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .card-list li::before {
+            content: '•';
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        footer {
+            z-index: 10;
+            color: #6b7280;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">HYP <span>TIP</span></div>
+    </header>
+
+    <main>
+        <div class="badge">
+            <span class="badge-dot"></span>
+            กำลังปรับปรุงระบบชั่วคราว
+        </div>
+
+        <h1>ระบบปิดปรับปรุง<br>เพื่อ<em>เพิ่มประสิทธิภาพ</em></h1>
+        
+        <p class="description">
+            เรากำลังอัปเดตระบบการรับโดเนทและปรับปรุงความเสถียรของเซิร์ฟเวอร์<br>
+            ขออภัยในความไม่สะดวก ระบบจะกลับมาเปิดให้บริการในเร็วๆ นี้
+        </p>
+
+        <div class="card">
+            <div class="card-title">
+                🛠️ สิ่งที่เรากำลังดำเนินการ:
+            </div>
+            <ul class="card-list">
+                <li>เพิ่มความเร็วและความเสถียรของระบบ Real-time Overlay</li>
+                <li>ปรับปรุงระบบตรวจเช็กการโอนผ่าน PromptPay QR</li>
+                <li>อัปเดตระบบความปลอดภัยและการกรองข้อความ</li>
+            </ul>
+        </div>
+    </main>
+
+    <footer>
+        <p>© HYP TIP — ระบบรับโดเนทสำหรับสตรีมเมอร์และครีเอเตอร์</p>
+    </footer>
+
+</body>
+</html>

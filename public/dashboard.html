@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แดชบอร์ด</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="nav" id="nav"></header>
+<main class="dash">
+  <div class="container">
+    <div class="dash-head">
+      <h1 id="hello"></h1>
+      <span class="live-pill" id="live" title="การเชื่อมต่อแจ้งเตือนเรียลไทม์"><i></i> แจ้งเตือนเรียลไทม์</span>
+    </div>
+    <p class="dash-sub">หน้าโดเนทของคุณ: <a id="pagelink" target="_blank" rel="noopener"></a>
+      <button class="btn sm ghost" id="copylink" type="button">คัดลอกลิงก์</button>
+    </p>
+
+    <div class="dash-tabs" id="tabs">
+      <button data-t="overview" class="active"></button>
+      <button data-t="donations"></button>
+      <button data-t="obs"></button>
+      <button data-t="settings"></button>
+    </div>
+
+    <!-- overview -->
+    <div id="t-overview">
+      <div class="kpis">
+        <div class="kpi"><span>ยอดรวมทั้งหมด</span><b id="k-total">0 <small>บาท</small></b><div class="k-ic"></div></div>
+        <div class="kpi"><span>30 วันล่าสุด</span><b id="k-month">0 <small>บาท</small></b><div class="k-ic"></div></div>
+        <div class="kpi"><span>จำนวนรายการที่สำเร็จ</span><b id="k-count">0</b><div class="k-ic"></div></div>
+        <div class="kpi"><span>รอตรวจสอบ</span><b id="k-pending">0</b><div class="k-ic"></div></div>
+      </div>
+      <div class="card" id="setup-hint" style="display:none">
+        <h3 style="margin-bottom:8px">เริ่มต้นใช้งาน</h3>
+        <p class="muted" style="margin-bottom:14px">ยังไม่ได้ตั้งค่า PromptPay หน้าโดเนทจะยังไม่เปิดรับเงินจนกว่าจะกรอกเบอร์พร้อมเพย์</p>
+        <button class="btn primary" onclick="goTab('settings')">ไปตั้งค่า</button>
+      </div>
+      <div class="card section-gap">
+        <div class="chart-head">
+          <div class="panel-title" id="recent-title"></div>
+          <button class="btn sm ghost" id="recent-all" type="button">ดูทั้งหมด</button>
+        </div>
+        <div class="feed" id="recent"></div>
+        <div class="empty hidden" id="recent-empty">ยังไม่มีรายการโดเนท</div>
+      </div>
+    </div>
+
+    <!-- donations -->
+    <div id="t-donations" class="hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="seg" id="filter">
+            <button data-v="" class="active">ทั้งหมด</button>
+            <button data-v="pending">รอตรวจสอบ</button>
+            <button data-v="paid">สำเร็จ</button>
+            <button data-v="rejected">ปฏิเสธ</button>
+          </div>
+          <button class="btn sm" id="reload" type="button"></button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>เวลา</th><th>ผู้โดเนท</th><th>ยอด</th><th>ข้อความ</th><th>สถานะ</th><th></th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="norows">ยังไม่มีรายการ</div>
+      </div>
+    </div>
+
+    <!-- obs -->
+    <div id="t-obs" class="hidden">
+      <div class="card pad-lg" style="max-width:760px">
+        <div class="panel-title" id="obs-title" style="margin-bottom:6px"></div>
+        <p class="muted" style="margin-bottom:16px">OBS → Sources → + → Browser → วางลิงก์นี้ (กว้าง 1920 สูง 1080) — อย่าแชร์ลิงก์นี้ให้ใคร</p>
+        <div class="copybox"><input type="text" id="obslink" readonly><button class="btn" id="copyobs" type="button">คัดลอก</button></div>
+        <div class="flex" style="margin-top:18px">
+          <button class="btn primary" id="test" type="button"></button>
+          <button class="btn danger" id="rotate" type="button">สร้างลิงก์ใหม่ (ลิงก์เดิมใช้ไม่ได้)</button>
+        </div>
+        <div id="obsmsg" class="msg" style="margin-top:14px"></div>
+        <p class="muted text-sm" style="margin-top:14px">💡 การอ่านออกเสียงใช้เสียงภาษาไทยของเบราว์เซอร์ ใน OBS บางเวอร์ชันอาจไม่มีเสียงอ่าน — ทดสอบก่อนสตรีมจริงเสมอ</p>
+      </div>
+    </div>
+
+    <!-- settings -->
+    <div id="t-settings" class="hidden">
+      <form class="card" id="sform" style="max-width:760px">
+        <div id="smsg" class="msg"></div>
+        <div class="panel-title" style="margin-bottom:14px" id="st-basic"></div>
+        <div class="row">
+          <div class="field"><label>ชื่อที่แสดง</label><input type="text" name="displayName" maxlength="40" required></div>
+          <div class="field"><label>PromptPay (เบอร์โทร 10 หลัก / เลขบัตร 13 หลัก)</label><input type="text" name="promptpayId" inputmode="numeric" placeholder="0812345678"></div>
+        </div>
+        <div class="field"><label>คำแนะนำตัว (แสดงบนหน้าโดเนท)</label><textarea name="bio" maxlength="200"></textarea></div>
+        <div class="row">
+          <div class="field"><label>ยอดขั้นต่ำ (บาท)</label><input type="number" name="minAmount" min="1" max="100000"></div>
+          <div class="field"><label>เวลาแสดงแจ้งเตือน (วินาที)</label><input type="number" name="alertSeconds" min="3" max="30"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>สีหลักของแจ้งเตือน</label><input type="color" name="accent"></div>
+          <div class="field"><label>คำต้องห้ามเพิ่มเติม (คั่นด้วยจุลภาค)</label><input type="text" name="blockedWords" maxlength="300" placeholder="คำที่1,คำที่2"></div>
+        </div>
+
+        <div class="section-gap" style="border-top:1px solid var(--line);padding-top:20px">
+          <div class="panel-title" style="margin-bottom:14px" id="st-tts"></div>
+          <div class="field"><label class="switch"><input type="checkbox" name="tts"> เปิดการอ่านข้อความออกเสียง (TTS)</label></div>
+          <div class="row">
+            <div class="field"><label>อ่านออกเสียงเมื่อยอดตั้งแต่ (บาท)</label><input type="number" name="minTts" min="1" max="100000"></div>
+            <div class="field"><label>ความเร็วการอ่าน: <output id="out-rate">1.0x</output></label><input type="range" name="ttsRate" min="0.5" max="2" step="0.1"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>ระดับเสียง: <output id="out-vol">100%</output></label><input type="range" name="ttsVolume" min="0" max="1" step="0.05"></div>
+            <div class="field"><label>โทนเสียง: <output id="out-pitch">1.0</output></label><input type="range" name="ttsPitch" min="0.5" max="2" step="0.1"></div>
+          </div>
+          <button class="btn sm" id="tts-test" type="button">▶ ทดสอบเสียงอ่าน</button>
+        </div>
+
+        <div class="section-gap"><button class="btn primary" type="submit">บันทึกการตั้งค่า</button></div>
+      </form>
+    </div>
+  </div>
+</main>
+<script src="/js/common.js"></script>
+<script>
+(async () => {
+  const me = await App.init({ title: 'แดชบอร์ด' });
+  if (!me) return (location.href = '/auth#login');
+  const $ = id => document.getElementById(id);
+  let user = me;
+
+  /* ------------------------------ header ------------------------------- */
+  const pageUrl = location.origin + '/' + user.username;
+  $('hello').textContent = 'สวัสดี ' + user.displayName + ' 👋';
+  $('pagelink').textContent = pageUrl; $('pagelink').href = pageUrl;
+  $('copylink').onclick = async () => { try { await navigator.clipboard.writeText(pageUrl); App.toast('คัดลอกลิงก์แล้ว', 'ok'); } catch (_) {} };
+  const tabIcons = { overview: ['chart', 'ภาพรวม'], donations: ['wallet', 'รายการโดเนท'], obs: ['link', 'ลิงก์ OBS'], settings: ['settings', 'ตั้งค่า'] };
+  document.querySelectorAll('#tabs button').forEach(b => {
+    const [ic, label] = tabIcons[b.dataset.t];
+    b.innerHTML = App.icon(ic, 15) + '<span>' + label + '</span>';
+  });
+  $('recent-title').innerHTML = App.icon('bell', 17) + '<span>รายการล่าสุด</span>';
+  $('obs-title').innerHTML = App.icon('link', 17) + '<span>ลิงก์ Overlay สำหรับ OBS</span>';
+  $('st-basic').innerHTML = App.icon('settings', 17) + '<span>ข้อมูลทั่วไป</span>';
+  $('st-tts').innerHTML = App.icon('mic', 17) + '<span>เสียงอ่านออกเสียง (TTS)</span>';
+  document.querySelectorAll('.kpi .k-ic')[0].innerHTML = App.icon('wallet', 18);
+  document.querySelectorAll('.kpi .k-ic')[1].innerHTML = App.icon('trend', 18);
+  document.querySelectorAll('.kpi .k-ic')[2].innerHTML = App.icon('gift', 18);
+  document.querySelectorAll('.kpi .k-ic')[3].innerHTML = App.icon('clock', 18);
+  $('reload').innerHTML = App.icon('refresh', 14) + '<span>รีเฟรช</span>';
+  $('test').innerHTML = App.icon('send', 15) + '<span>ส่งแจ้งเตือนทดสอบ</span>';
+
+  window.goTab = t => {
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    ['overview', 'donations', 'obs', 'settings'].forEach(x => $('t-' + x).classList.toggle('hidden', x !== t));
+    if (t === 'donations') loadRows();
+    if (t === 'overview') { loadSummary(); loadRecent(); }
+  };
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => goTab(b.dataset.t));
+  $('recent-all').onclick = () => goTab('donations');
+
+  /* ------------------------------ summary ------------------------------ */
+  async function loadSummary() {
+    const s = await App.api('/api/dashboard/summary');
+    $('k-total').innerHTML = App.money(s.total) + ' <small>บาท</small>';
+    $('k-month').innerHTML = App.money(s.month) + ' <small>บาท</small>';
+    $('k-count').textContent = App.money(s.count);
+    $('k-pending').textContent = App.money(s.pending);
+    $('setup-hint').style.display = user.promptpayId ? 'none' : 'block';
+  }
+
+  const statusTh = { pending: 'รอตรวจสอบ', paid: 'สำเร็จ', rejected: 'ปฏิเสธ' };
+
+  async function loadRecent() {
+    const { donations } = await App.api('/api/dashboard/donations');
+    const box = $('recent'); box.replaceChildren();
+    $('recent-empty').classList.toggle('hidden', donations.length > 0);
+    for (const d of donations.slice(0, 6)) {
+      const it = document.createElement('div'); it.className = 'feed-item';
+      const ic = document.createElement('div'); ic.className = 'f-ic' + (d.status === 'paid' ? ' ok' : '');
+      ic.innerHTML = App.icon(d.status === 'paid' ? 'check' : d.status === 'rejected' ? 'x' : 'clock', 16);
+      const body = document.createElement('div'); body.style.flex = '1'; body.style.minWidth = '0';
+      const line1 = document.createElement('div');
+      const b = document.createElement('b'); b.textContent = d.donor_name;
+      const amt = document.createElement('span'); amt.style.color = 'var(--accent2c)'; amt.style.fontWeight = '600'; amt.textContent = ' · ' + App.money(d.amount) + ' ฿';
+      line1.append(b, amt);
+      const line2 = document.createElement('small');
+      line2.textContent = (d.message ? d.message.slice(0, 60) + (d.message.length > 60 ? '…' : '') + ' · ' : '') + App.timeAgo(d.created_at);
+      body.append(line1, line2);
+      const st = document.createElement('span'); st.className = 'status ' + d.status; st.textContent = statusTh[d.status];
+      it.append(ic, body, st); box.appendChild(it);
+    }
+  }
+
+  /* ------------------------------ donations ----------------------------- */
+  let filterVal = '';
+  async function loadRows() {
+    const { donations } = await App.api('/api/dashboard/donations' + (filterVal ? '?status=' + filterVal : ''));
+    const tb = $('rows'); tb.replaceChildren();
+    $('norows').classList.toggle('hidden', donations.length > 0);
+    for (const d of donations) {
+      const tr = document.createElement('tr');
+      const cell = txt => { const td = document.createElement('td'); td.textContent = txt; tr.appendChild(td); return td; };
+      cell(App.dt(d.created_at));
+      const nameTd = cell(d.donor_name); nameTd.style.fontWeight = '600';
+      const amtTd = cell(App.money(d.amount) + ' ฿'); amtTd.style.color = 'var(--accent2c)'; amtTd.style.fontWeight = '600';
+      cell(d.message || '-').style.maxWidth = '260px';
+      const st = document.createElement('td'); const sp = document.createElement('span');
+      sp.className = 'status ' + d.status; sp.textContent = statusTh[d.status]; st.appendChild(sp); tr.appendChild(st);
+      const ac = document.createElement('td'); const box = document.createElement('div'); box.className = 'actions-cell';
+      const btn = (label, cls, fn, icon) => {
+        const b = document.createElement('button'); b.className = 'btn sm ' + cls;
+        b.innerHTML = (icon ? App.icon(icon, 13) : '') + '<span>' + label + '</span>';
+        b.onclick = fn; box.appendChild(b);
+      };
+      if (d.has_slip) btn('ดูสลิป', '', () => window.open('/api/dashboard/slip/' + d.id, '_blank'), 'eye');
+      if (d.status === 'pending') {
+        btn('ยืนยัน', 'primary', () => act(d.id, 'approve'), 'check');
+        btn('ปฏิเสธ', 'danger', () => act(d.id, 'reject'), 'x');
+      }
+      if (d.status === 'paid') btn('เล่นซ้ำ', '', async () => {
+        const r = await App.api('/api/dashboard/donations/' + d.id + '/replay', { method: 'POST' });
+        App.toast(r.clients ? 'ส่งแจ้งเตือนขึ้นจอแล้ว' : 'ไม่พบ OBS ที่เปิดอยู่', r.clients ? 'ok' : 'err');
+      }, 'play');
+      ac.appendChild(box); tr.appendChild(ac); tb.appendChild(tr);
+    }
+  }
+  async function act(id, what) {
+    try { await App.api('/api/dashboard/donations/' + id + '/' + what, { method: 'POST' }); App.toast('เรียบร้อย', 'ok'); loadRows(); loadSummary(); loadRecent(); }
+    catch (e) { App.toast(e.message, 'err'); }
+  }
+  document.querySelectorAll('#filter button').forEach(b => b.onclick = () => {
+    filterVal = b.dataset.v;
+    document.querySelectorAll('#filter button').forEach(x => x.classList.toggle('active', x === b));
+    loadRows();
+  });
+  $('reload').onclick = loadRows;
+
+  /* ------------------------------- OBS ---------------------------------- */
+  const setObs = () => { $('obslink').value = location.origin + '/overlay/' + user.overlayToken; };
+  setObs();
+  $('copyobs').onclick = async () => { try { await navigator.clipboard.writeText($('obslink').value); App.toast('คัดลอกแล้ว', 'ok'); } catch (_) { $('obslink').select(); } };
+  $('test').onclick = async () => {
+    const r = await App.api('/api/dashboard/test-alert', { method: 'POST' });
+    App.msg($('obsmsg'), r.clients ? '✅ ส่งแจ้งเตือนทดสอบไปที่ OBS แล้ว' : 'ยังไม่พบหน้า Overlay ที่เปิดอยู่ — ลองเปิดลิงก์ด้านบนในแท็บใหม่หรือ OBS ก่อน', r.clients ? 'ok' : 'err');
+  };
+  $('rotate').onclick = async () => {
+    if (!confirm('สร้างลิงก์ใหม่? ลิงก์เดิมใน OBS จะใช้ไม่ได้ทันที')) return;
+    const r = await App.api('/api/dashboard/rotate-token', { method: 'POST' });
+    user.overlayToken = r.overlayToken; setObs(); App.toast('สร้างลิงก์ใหม่แล้ว', 'ok');
+  };
+
+  /* ------------------------------ settings ------------------------------ */
+  const f = $('sform');
+  function fill() {
+    for (const k of ['displayName', 'promptpayId', 'bio', 'minAmount', 'alertSeconds', 'accent', 'minTts', 'blockedWords']) f.elements[k].value = user[k] ?? '';
+    f.elements.tts.checked = !!user.tts;
+    f.elements.ttsRate.value = user.ttsRate ?? 1;
+    f.elements.ttsVolume.value = user.ttsVolume ?? 1;
+    f.elements.ttsPitch.value = user.ttsPitch ?? 1;
+    updateOutputs();
+  }
+  function updateOutputs() {
+    $('out-rate').textContent = Number(f.elements.ttsRate.value).toFixed(1) + 'x';
+    $('out-vol').textContent = Math.round(f.elements.ttsVolume.value * 100) + '%';
+    $('out-pitch').textContent = Number(f.elements.ttsPitch.value).toFixed(1);
+    ['ttsRate', 'ttsVolume', 'ttsPitch'].forEach(n => {
+      const el = f.elements[n], p = (el.value - el.min) / (el.max - el.min) * 100;
+      el.style.setProperty('--fill', p + '%');
+    });
+  }
+  ['ttsRate', 'ttsVolume', 'ttsPitch'].forEach(n => f.elements[n].addEventListener('input', updateOutputs));
+  fill();
+  $('tts-test').onclick = () => {
+    const text = 'ทดสอบเสียงอ่าน น้องมิ้นท์ โดเนท หนึ่งร้อยห้าสิบบาท สู้ๆ นะครับ';
+    try {
+      const u = new SpeechSynthesisUtterance(text); u.lang = 'th-TH';
+      u.rate = Number(f.elements.ttsRate.value); u.volume = Number(f.elements.ttsVolume.value); u.pitch = Number(f.elements.ttsPitch.value);
+      const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith('th'));
+      if (v) u.voice = v;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch (_) { App.toast('เบราว์เซอร์นี้ไม่รองรับเสียงพูด', 'err'); }
+  };
+  if ('speechSynthesis' in window) speechSynthesis.getVoices();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const body = Object.fromEntries(new FormData(f));
+    body.tts = f.elements.tts.checked;
+    body.ttsRate = f.elements.ttsRate.value; body.ttsVolume = f.elements.ttsVolume.value; body.ttsPitch = f.elements.ttsPitch.value;
+    try {
+      const r = await App.api('/api/settings', { method: 'PATCH', body });
+      user = r.user; fill(); App.msg($('smsg'), '✅ บันทึกการตั้งค่าแล้ว', 'ok'); loadSummary();
+    } catch (er) { App.msg($('smsg'), er.message); }
+  };
+
+  /* ----------------------------- realtime ------------------------------- */
+  const live = $('live');
+  function refreshAll() { loadSummary(); loadRecent(); if (!$('t-donations').classList.contains('hidden')) loadRows(); }
+  App.sse('/api/dashboard/stream', {
+    'donation-new': d => {
+      App.toast(`🎉 มีโดเนทใหม่จาก ${d.donor_name} · ${App.money(d.amount)} ฿`, 'ok');
+      App.ping(1046);
+      refreshAll();
+    },
+    'donation-paid': () => { App.toast('✅ รายการได้รับการยืนยันแล้ว', 'ok'); refreshAll(); },
+    'donation-rejected': () => refreshAll()
+  }).onopen = () => live.classList.remove('off');
+  addEventListener('offline', () => live.classList.add('off'));
+  // กันเหนียว: ถ้า SSE ขาด ให้ poll ช้าๆ เป็นตาข่ายรองรับ
+  setInterval(() => { if (document.visibilityState === 'visible') refreshAll(); }, 45000);
+
+  loadSummary(); loadRecent();
+})();
+</script>
+</body>
+</html>

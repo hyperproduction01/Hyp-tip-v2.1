@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แดชบอร์ด</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="nav" id="nav"></header>
+<main class="dash">
+  <div class="container">
+    <h1 id="hello" style="font-size:1.7rem"></h1>
+    <p style="color:var(--muted)">ลิงก์หน้าโดเนทของคุณ: <a id="pagelink" style="color:#c4b5fd;text-decoration:underline" target="_blank" rel="noopener"></a></p>
+
+    <div class="dash-tabs" id="tabs">
+      <button data-t="overview" class="active">ภาพรวม</button>
+      <button data-t="donations">รายการโดเนท</button>
+      <button data-t="obs">ลิงก์ OBS</button>
+      <button data-t="settings">ตั้งค่า</button>
+    </div>
+
+    <!-- overview -->
+    <div id="t-overview">
+      <div class="kpis">
+        <div class="kpi"><span>ยอดรวมทั้งหมด (บาท)</span><b id="k-total">0</b></div>
+        <div class="kpi"><span>30 วันล่าสุด (บาท)</span><b id="k-month">0</b></div>
+        <div class="kpi"><span>จำนวนรายการ</span><b id="k-count">0</b></div>
+        <div class="kpi"><span>รอตรวจสอบ</span><b id="k-pending">0</b></div>
+      </div>
+      <div class="card" id="setup-hint" style="display:none">
+        <h3 style="margin-bottom:8px">เริ่มต้นใช้งาน</h3>
+        <p style="color:var(--muted);margin-bottom:14px">ยังไม่ได้ตั้งค่า PromptPay หน้าโดเนทจะยังไม่เปิดรับเงินจนกว่าจะกรอกเบอร์พร้อมเพย์</p>
+        <button class="btn primary" onclick="goTab('settings')">ไปตั้งค่า</button>
+      </div>
+    </div>
+
+    <!-- donations -->
+    <div id="t-donations" class="hidden">
+      <div class="card">
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <select id="filter" style="width:auto">
+            <option value="">ทั้งหมด</option><option value="pending">รอตรวจสอบ</option>
+            <option value="paid">สำเร็จ</option><option value="rejected">ปฏิเสธ</option>
+          </select>
+          <button class="btn sm" id="reload">รีเฟรช</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>เวลา</th><th>ชื่อ</th><th>ยอด</th><th>ข้อความ</th><th>สถานะ</th><th></th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="norows">ยังไม่มีรายการ</div>
+      </div>
+    </div>
+
+    <!-- obs -->
+    <div id="t-obs" class="hidden">
+      <div class="card" style="max-width:720px">
+        <h3 style="margin-bottom:6px">ลิงก์ Overlay สำหรับ OBS</h3>
+        <p style="color:var(--muted);margin-bottom:14px">OBS → Sources → + → Browser → วางลิงก์นี้ (กว้าง 1920 สูง 1080) อย่าแชร์ลิงก์นี้ให้ใคร</p>
+        <div class="copybox"><input type="text" id="obslink" readonly><button class="btn" id="copyobs">คัดลอก</button></div>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+          <button class="btn primary" id="test">ส่งแจ้งเตือนทดสอบ</button>
+          <button class="btn danger" id="rotate">สร้างลิงก์ใหม่ (ลิงก์เดิมใช้ไม่ได้)</button>
+        </div>
+        <div id="obsmsg" class="msg" style="margin-top:14px"></div>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:12px">หมายเหตุ: การอ่านออกเสียงใช้เสียงภาษาไทยของเบราว์เซอร์ ใน OBS บางเวอร์ชันอาจไม่มีเสียงอ่าน ให้ทดสอบก่อนสตรีมจริง</p>
+      </div>
+    </div>
+
+    <!-- settings -->
+    <div id="t-settings" class="hidden">
+      <form class="card" id="sform" style="max-width:720px">
+        <div id="smsg" class="msg"></div>
+        <div class="row">
+          <div class="field"><label>ชื่อที่แสดง</label><input type="text" name="displayName" maxlength="40" required></div>
+          <div class="field"><label>PromptPay (เบอร์โทร 10 หลัก / เลขบัตร 13 หลัก)</label><input type="text" name="promptpayId" inputmode="numeric" placeholder="0812345678"></div>
+        </div>
+        <div class="field"><label>คำแนะนำตัว (แสดงบนหน้าโดเนท)</label><textarea name="bio" maxlength="200"></textarea></div>
+        <div class="row">
+          <div class="field"><label>ยอดขั้นต่ำ (บาท)</label><input type="number" name="minAmount" min="1" max="100000"></div>
+          <div class="field"><label>เวลาแสดงแจ้งเตือน (วินาที)</label><input type="number" name="alertSeconds" min="3" max="30"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>สีหลัก</label><input type="color" name="accent"></div>
+          <div class="field"><label>อ่านออกเสียงเมื่อยอดตั้งแต่ (บาท)</label><input type="number" name="minTts" min="1" max="100000"></div>
+        </div>
+        <div class="field"><label class="switch"><input type="checkbox" name="tts"> เปิดการอ่านข้อความออกเสียง (TTS)</label></div>
+        <div class="field"><label>คำต้องห้ามเพิ่มเติม (คั่นด้วยเครื่องหมายจุลภาค)</label><input type="text" name="blockedWords" maxlength="300" placeholder="คำที่1,คำที่2"></div>
+        <button class="btn primary" type="submit">บันทึกการตั้งค่า</button>
+      </form>
+    </div>
+  </div>
+</main>
+<script src="/js/common.js"></script>
+<script>
+(async () => {
+  const me = await App.init({ title: 'แดชบอร์ด' });
+  if (!me) return (location.href = '/auth#login');
+  const $ = id => document.getElementById(id);
+  let user = me;
+
+  const pageUrl = location.origin + '/' + user.username;
+  $('hello').textContent = 'สวัสดี ' + user.displayName;
+  $('pagelink').textContent = pageUrl; $('pagelink').href = pageUrl;
+
+  window.goTab = t => {
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    ['overview', 'donations', 'obs', 'settings'].forEach(x => $('t-' + x).classList.toggle('hidden', x !== t));
+    if (t === 'donations') loadRows();
+    if (t === 'overview') loadSummary();
+  };
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => goTab(b.dataset.t));
+
+  async function loadSummary() {
+    const s = await App.api('/api/dashboard/summary');
+    $('k-total').textContent = App.money(s.total); $('k-month').textContent = App.money(s.month);
+    $('k-count').textContent = App.money(s.count); $('k-pending').textContent = App.money(s.pending);
+    $('setup-hint').style.display = user.promptpayId ? 'none' : 'block';
+  }
+
+  const statusTh = { pending: 'รอตรวจสอบ', paid: 'สำเร็จ', rejected: 'ปฏิเสธ' };
+  async function loadRows() {
+    const q = $('filter').value;
+    const { donations } = await App.api('/api/dashboard/donations' + (q ? '?status=' + q : ''));
+    const tb = $('rows'); tb.replaceChildren();
+    $('norows').classList.toggle('hidden', donations.length > 0);
+    for (const d of donations) {
+      const tr = document.createElement('tr');
+      const cell = (txt) => { const td = document.createElement('td'); td.textContent = txt; tr.appendChild(td); return td; };
+      cell(App.dt(d.created_at)); cell(d.donor_name); cell(App.money(d.amount) + ' ฿'); cell(d.message || '-').style.maxWidth = '260px';
+      const st = document.createElement('td'); const sp = document.createElement('span');
+      sp.className = 'status ' + d.status; sp.textContent = statusTh[d.status]; st.appendChild(sp); tr.appendChild(st);
+      const ac = document.createElement('td'); const box = document.createElement('div'); box.className = 'actions-cell';
+      const btn = (label, cls, fn) => { const b = document.createElement('button'); b.className = 'btn sm ' + cls; b.textContent = label; b.onclick = fn; box.appendChild(b); };
+      if (d.has_slip) btn('ดูสลิป', '', () => window.open('/api/dashboard/slip/' + d.id, '_blank'));
+      if (d.status === 'pending') {
+        btn('ยืนยัน', 'primary', () => act(d.id, 'approve'));
+        btn('ปฏิเสธ', 'danger', () => act(d.id, 'reject'));
+      }
+      if (d.status === 'paid') btn('เล่นซ้ำ', '', async () => {
+        const r = await App.api('/api/dashboard/donations/' + d.id + '/replay', { method: 'POST' });
+        App.toast(r.clients ? 'ส่งแจ้งเตือนแล้ว' : 'ไม่พบ OBS ที่เปิดอยู่');
+      });
+      ac.appendChild(box); tr.appendChild(ac); tb.appendChild(tr);
+    }
+  }
+  async function act(id, what) {
+    try { await App.api('/api/dashboard/donations/' + id + '/' + what, { method: 'POST' }); App.toast('เรียบร้อย'); loadRows(); }
+    catch (e) { App.toast(e.message); }
+  }
+  $('filter').onchange = loadRows; $('reload').onclick = loadRows;
+  setInterval(() => { if (!$('t-donations').classList.contains('hidden') && document.visibilityState === 'visible') loadRows(); }, 10000);
+
+  // obs
+  const setObs = () => { $('obslink').value = location.origin + '/overlay/' + user.overlayToken; };
+  setObs();
+  $('copyobs').onclick = async () => { try { await navigator.clipboard.writeText($('obslink').value); App.toast('คัดลอกแล้ว'); } catch (_) { $('obslink').select(); } };
+  $('test').onclick = async () => {
+    const r = await App.api('/api/dashboard/test-alert', { method: 'POST' });
+    App.msg($('obsmsg'), r.clients ? 'ส่งแจ้งเตือนทดสอบไปที่ OBS แล้ว' : 'ยังไม่พบหน้า Overlay ที่เปิดอยู่ ลองเปิดลิงก์ด้านบนในแท็บใหม่หรือ OBS ก่อน', r.clients ? 'ok' : 'err');
+  };
+  $('rotate').onclick = async () => {
+    if (!confirm('สร้างลิงก์ใหม่? ลิงก์เดิมใน OBS จะใช้ไม่ได้ทันที')) return;
+    const r = await App.api('/api/dashboard/rotate-token', { method: 'POST' });
+    user.overlayToken = r.overlayToken; setObs(); App.toast('สร้างลิงก์ใหม่แล้ว');
+  };
+
+  // settings
+  const f = $('sform');
+  function fill() {
+    for (const k of ['displayName', 'promptpayId', 'bio', 'minAmount', 'alertSeconds', 'accent', 'minTts', 'blockedWords']) f.elements[k].value = user[k] ?? '';
+    f.elements.tts.checked = !!user.tts;
+  }
+  fill();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const body = Object.fromEntries(new FormData(f)); body.tts = f.elements.tts.checked;
+    try {
+      const r = await App.api('/api/settings', { method: 'PATCH', body });
+      user = r.user; fill(); App.msg($('smsg'), 'บันทึกแล้ว', 'ok'); loadSummary();
+    } catch (er) { App.msg($('smsg'), er.message); }
+  };
+
+  loadSummary();
+})();
+</script>
+</body>
+</html>

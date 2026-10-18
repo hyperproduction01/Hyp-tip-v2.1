@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Donation Overlay</title>
+<link rel="icon" href="/img/favicon.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&display=swap');
+  html, body { margin: 0; background: transparent; overflow: hidden; font-family: 'Prompt', sans-serif; }
+  #stage { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 6vh 3vw; }
+
+  .alert {
+    --c: #ef2b2d;
+    --c2: color-mix(in srgb, var(--c), #ffb35c 40%);
+    max-width: min(920px, 94vw); min-width: 340px; color: #fff; border-radius: 26px; padding: 24px 32px; position: relative; overflow: hidden;
+    background: linear-gradient(150deg, rgba(18, 16, 34, .96), rgba(28, 16, 46, .96));
+    border: 1.5px solid color-mix(in srgb, var(--c) 85%, transparent);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, .05), 0 24px 80px -12px var(--c), inset 0 1px 0 rgba(255, 255, 255, .12);
+    transform: translateY(60px) scale(.88); opacity: 0;
+    transition: transform .55s cubic-bezier(.18, 1.25, .35, 1), opacity .4s ease;
+  }
+  .alert::before { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .12) 48%, transparent 62%); transform: translateX(-120%); animation: sweep 2.4s .35s ease-out forwards; pointer-events: none; }
+  @keyframes sweep { to { transform: translateX(120%); } }
+  .alert.in { transform: none; opacity: 1; }
+  .alert .head { display: flex; align-items: center; gap: 14px; }
+  .alert .coin {
+    width: 54px; height: 54px; border-radius: 17px; flex: none; display: grid; place-items: center;
+    background: linear-gradient(140deg, var(--c), var(--c2)); box-shadow: 0 10px 28px -6px var(--c), inset 0 2px 0 rgba(255, 255, 255, .35);
+    animation: coinPulse 1.8s ease-in-out infinite;
+  }
+  .alert .coin svg { width: 26px; height: 26px; }
+  @keyframes coinPulse { 50% { transform: scale(1.08) rotate(-4deg); } }
+  .alert .top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 700; font-size: clamp(24px, 3.4vw, 40px); line-height: 1.15; letter-spacing: -.01em; }
+  .alert .name { color: #fff; text-shadow: 0 2px 18px rgba(255, 255, 255, .25); }
+  .alert .mid { font-size: .55em; font-weight: 600; color: rgba(255, 255, 255, .6); letter-spacing: .18em; text-transform: uppercase; }
+  .alert .amt { background: linear-gradient(120deg, var(--c), var(--c2)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 16px color-mix(in srgb, var(--c) 60%, transparent)); }
+  .alert .txt {
+    margin-top: 12px; font-size: clamp(17px, 2.3vw, 26px); color: #ececf6; word-break: break-word; line-height: 1.45; font-weight: 500;
+    border-left: 3px solid color-mix(in srgb, var(--c) 80%, transparent); padding-left: 14px;
+    animation: fadeUp .5s .2s ease both;
+  }
+  .alert .txt:empty { display: none; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } }
+  .alert .bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; transform-origin: left; background: linear-gradient(90deg, var(--c), var(--c2)); animation: shrink linear forwards; }
+  @keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+  #unlock { position: fixed; top: 12px; right: 12px; padding: 8px 14px; border-radius: 999px; border: 0; background: #fbbf24; color: #111; font: 600 12px 'Prompt', sans-serif; cursor: pointer; display: none; z-index: 10; box-shadow: 0 8px 24px -6px rgba(0, 0, 0, .6); }
+  #status { position: fixed; bottom: 10px; right: 12px; font: 500 11px 'Prompt', sans-serif; color: rgba(255, 255, 255, .5); background: rgba(0, 0, 0, .45); padding: 4px 12px; border-radius: 999px; display: none; }
+  #status.show { display: block; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="unlock">🔇 แตะเพื่อเปิดเสียง</button>
+<div id="status"></div>
+<script>
+(() => {
+  const token = location.pathname.split('/').pop();
+  const stage = document.getElementById('stage');
+  const unlock = document.getElementById('unlock');
+  const status = document.getElementById('status');
+  const queue = []; let busy = false;
+  let ctx = null;
+
+  /* ------------------------------ audio -------------------------------- */
+  function audio() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
+    if (ctx && ctx.state === 'suspended') { ctx.resume().catch(() => {}); if (ctx.state === 'suspended') unlock.style.display = 'block'; }
+    return ctx;
+  }
+  unlock.onclick = () => { audio(); unlock.style.display = 'none'; };
+  addEventListener('pointerdown', () => { audio(); unlock.style.display = 'none'; }, { once: true });
+
+  let masterVol = 1;
+  function chime() {
+    const a = audio(); if (!a) return;
+    [587.33, 880, 1174.66].forEach((f, i) => {
+      const o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.value = f;
+      const t = a.currentTime + i * 0.11;
+      const peak = 0.22 * masterVol;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.001, peak), t + 0.025);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.6);
+    });
+  }
+
+  /* ------------------------------- TTS --------------------------------- */
+  let thaiVoices = [];
+  function loadVoices() {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      const all = speechSynthesis.getVoices() || [];
+      thaiVoices = all.filter(v => v.lang && v.lang.toLowerCase().startsWith('th'));
+      if (!thaiVoices.length && all.length) setStatus('ไม่พบเสียงไทยในเครื่องนี้ — ข้อความอาจไม่ถูกอ่าน');
+    } catch (_) {}
+  }
+  if ('speechSynthesis' in window) {
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+    setTimeout(loadVoices, 1200);
+  }
+  function setStatus(t) { status.textContent = t; status.classList.toggle('show', !!t); setTimeout(() => status.classList.remove('show'), 6000); }
+
+  // รอให้เสียงพูดจบจริง (ไม่ใช้ estimatedDuration เพราะแม่นยำกว่า)
+  function speak(text, opts, done) {
+    if (!('speechSynthesis' in window) || !text) return done();
+    let u;
+    try {
+      u = new SpeechSynthesisUtterance(text);
+      u.lang = 'th-TH';
+      u.rate = opts.rate || 1; u.volume = Math.min(1, opts.volume ?? 1); u.pitch = opts.pitch || 1;
+      if (thaiVoices.length) u.voice = thaiVoices[0];
+      let finished = false;
+      const finish = () => { if (!finished) { finished = true; done(); } };
+      u.onend = finish;
+      u.onerror = finish;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+      // กันค้าง: ถ้าเสียงไม่จบภายใน 30 วินาที (browser bug) ปล่อยคิวต่อ
+      setTimeout(finish, 30000);
+      // เผื่อ onend ไม่ถูกเรียกใน OBS บางเวอร์ชัน: 估算เวลาพูดคร่าวๆ
+      const est = Math.min(25000, 1200 + text.length * 110 / Math.max(0.5, u.rate));
+      setTimeout(finish, est + 1500);
+    } catch (_) { done(); }
+  }
+
+  /* ------------------------------- alert -------------------------------- */
+  const heartSvg = '<svg viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-7.5-4.7-9.5-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.5 12c-2 4.3-9.5 9-9.5 9Z"/></svg>';
+
+  function play(d) {
+    busy = true;
+    masterVol = Number.isFinite(d.volume) ? Math.max(0.05, d.volume) : 1;
+
+    const el = document.createElement('div'); el.className = 'alert';
+    el.style.setProperty('--c', d.accent || '#ef2b2d');
+    const head = document.createElement('div'); head.className = 'head';
+    const coin = document.createElement('div'); coin.className = 'coin'; coin.innerHTML = heartSvg;
+    const top = document.createElement('div'); top.className = 'top';
+    const n = document.createElement('span'); n.className = 'name'; n.textContent = d.name || 'ผู้ไม่ประสงค์ออกนาม';
+    const mid = document.createElement('span'); mid.className = 'mid'; mid.textContent = 'donated';
+    const a = document.createElement('span'); a.className = 'amt'; a.textContent = Number(d.amount).toLocaleString('th-TH') + ' บาท';
+    top.append(n, mid, a); head.append(coin, top);
+    const t = document.createElement('div'); t.className = 'txt'; t.textContent = d.message || '';
+    const bar = document.createElement('div'); bar.className = 'bar';
+    const secs = Math.max(3, d.seconds || 8);
+    bar.style.animationDuration = secs + 's';
+    el.append(head, t, bar); stage.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+
+    chime();
+    if (d.speak) {
+      const text = d.speech || `${d.name} โดเนท ${d.amount} บาท ${d.message || ''}`;
+      setTimeout(() => speak(text, { rate: d.rate, volume: d.volume, pitch: d.pitch }, () => {}), 650);
+    }
+    setTimeout(() => {
+      el.classList.remove('in');
+      el.style.transitionTimingFunction = 'ease-in';
+      setTimeout(() => { el.remove(); busy = false; next(); }, 480);
+    }, secs * 1000);
+  }
+  function next() { if (!busy && queue.length) play(queue.shift()); }
+
+  /* ------------------------------ connect ------------------------------- */
+  function connect() {
+    const es = new EventSource('/api/overlay/' + encodeURIComponent(token) + '/stream');
+    es.addEventListener('hello', () => status.classList.remove('show'));
+    es.addEventListener('donation', e => { try { queue.push(JSON.parse(e.data)); next(); } catch (_) {} });
+    es.onerror = () => {
+      if (es.readyState === 2) { setStatus('การเชื่อมต่อหลุด — กำลังเชื่อมต่อใหม่...'); setTimeout(connect, 3000); }
+    };
+  }
+  connect();
+})();
+</script>
+</body>
+</html>

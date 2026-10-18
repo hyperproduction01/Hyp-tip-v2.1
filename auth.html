@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เข้าสู่ระบบ</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="nav" id="nav"></header>
+<main class="center-page">
+  <div class="card narrow">
+    <div class="tabs">
+      <button id="tab-login" class="active">เข้าสู่ระบบ</button>
+      <button id="tab-register">สมัครสมาชิก</button>
+    </div>
+    <div id="err" class="msg"></div>
+
+    <form id="form-login">
+      <div class="field"><label>อีเมล</label><input type="email" name="email" required autocomplete="email"></div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" name="password" required autocomplete="current-password"></div>
+      <button class="btn primary block" type="submit">เข้าสู่ระบบ</button>
+    </form>
+
+    <form id="form-register" class="hidden">
+      <div class="field"><label>อีเมล</label><input type="email" name="email" required autocomplete="email"></div>
+      <div class="row">
+        <div class="field"><label>ชื่อลิงก์ (username)</label><input type="text" name="username" required pattern="[a-zA-Z0-9_]{3,20}" placeholder="yourname" autocomplete="username"><small>a-z 0-9 _ ยาว 3-20 ตัว</small></div>
+        <div class="field"><label>ชื่อที่แสดง</label><input type="text" name="displayName" maxlength="40" placeholder="ชื่อสตรีมเมอร์"></div>
+      </div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" name="password" required minlength="8" autocomplete="new-password"><small>อย่างน้อย 8 ตัวอักษร</small></div>
+      <button class="btn primary block" type="submit">สร้างบัญชี</button>
+    </form>
+  </div>
+</main>
+<script src="/js/common.js"></script>
+<script>
+(async () => {
+  const me = await App.init({ title: 'เข้าสู่ระบบ' });
+  if (me) return (location.href = '/dashboard');
+  const err = document.getElementById('err');
+  const tl = document.getElementById('tab-login'), tr = document.getElementById('tab-register');
+  const fl = document.getElementById('form-login'), fr = document.getElementById('form-register');
+  function show(which) {
+    const reg = which === 'register';
+    tl.classList.toggle('active', !reg); tr.classList.toggle('active', reg);
+    fl.classList.toggle('hidden', reg); fr.classList.toggle('hidden', !reg);
+    App.msg(err, '');
+    history.replaceState(null, '', '#' + which);
+  }
+  tl.onclick = () => show('login'); tr.onclick = () => show('register');
+  show(location.hash === '#register' ? 'register' : 'login');
+
+  async function submit(form, path) {
+    const btn = form.querySelector('button[type=submit]'); btn.disabled = true;
+    try {
+      await App.api(path, { method: 'POST', body: Object.fromEntries(new FormData(form)) });
+      location.href = '/dashboard';
+    } catch (e) { App.msg(err, e.message); btn.disabled = false; }
+  }
+  fl.onsubmit = e => { e.preventDefault(); submit(fl, '/api/login'); };
+  fr.onsubmit = e => { e.preventDefault(); submit(fr, '/api/register'); };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ระบบรับโดเนทสำหรับสตรีมเมอร์ รับเงินผ่าน PromptPay พร้อมแจ้งเตือนบนหน้าจอสตรีมแบบเรียลไทม์">
+<title>HYP TIP</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="nav" id="nav"></header>
+
+<main>
+  <section class="hero" style="padding-top:110px">
+    <div class="aurora a1"></div><div class="aurora a2"></div>
+    <div class="container">
+      <span class="badge"><i></i> เปิดรับสมัครผู้รับโดเนทแล้ว</span>
+      <h1>ทุกคนเริ่มต้น<br>การ<em class="hl">สนับสนุน</em> ที่นี่</h1>
+      <p class="lead">สร้างหน้าโดเนทของคุณผ่านระบบของเรา รับเงินเข้า PromptPay โดยตรง และเห็นแจ้งเตือนบนจอสตรีมทันทีแบบเรียลไทม์</p>
+      <div class="actions">
+        <a class="btn primary lg" href="/auth#register">เริ่มสมัคร</a>
+        <a class="btn lg" href="#process">ดูขั้นตอน</a>
+      </div>
+      <small>ใช้เวลาไม่ถึง 5 นาที · ไม่มีค่าธรรมเนียมแพลตฟอร์ม</small>
+
+      <div class="stats">
+        <div class="stat"><b id="s1">0</b><span>ผู้รับโดเนททั้งหมด</span></div>
+        <div class="stat"><b id="s2">0</b><span>รายการที่สำเร็จ</span></div>
+        <div class="stat"><b id="s3">0</b><span>ยอดรวม (บาท)</span></div>
+      </div>
+
+      <div class="frame" aria-hidden="true">
+        <div class="screen">
+          <div class="rec"><i></i> LIVE</div>
+          <div class="mock-alert">
+            <div class="coin">❤</div>
+            <div><b>น้องมิ้นท์ โดเนท 100 บาท</b><p>สู้ๆ นะครับ ติดตามทุกไลฟ์เลย!</p></div>
+          </div>
+        </div>
+      </div>
+      <p class="hero-cap">ตัวอย่างแจ้งเตือนบนหน้าจอสตรีม</p>
+    </div>
+  </section>
+
+  <section id="process" class="alt">
+    <div class="container">
+      <div class="sec-head reveal">
+        <span class="eyebrow">ขั้นตอน</span>
+        <h2>สี่ขั้นตอน <em class="hl">เริ่มรับโดเนทได้เลย</em></h2>
+        <p>ตั้งแต่สมัครจนถึงแจ้งเตือนขึ้นจอสตรีม ใช้เวลาไม่ถึงห้านาที</p>
+      </div>
+      <div class="rail-wrap reveal">
+        <div class="rail" id="rail">
+          <div class="step"><span class="n">ขั้นที่ 01</span><h3>สมัครสมาชิก</h3><p>สมัครด้วยอีเมลและตั้งชื่อลิงก์ของคุณ เช่น /yourname ไม่ต้องใช้เอกสารใดๆ</p><em>ใช้เวลา ~1 นาที</em></div>
+          <div class="step"><span class="n">ขั้นที่ 02</span><h3>ใส่ PromptPay</h3><p>กรอกเบอร์พร้อมเพย์หรือเลขบัตรประชาชน เงินโดเนทเข้าบัญชีคุณโดยตรง</p><em>ใช้เวลา ~30 วินาที</em></div>
+          <div class="step"><span class="n">ขั้นที่ 03</span><h3>ใส่ลิงก์ใน OBS</h3><p>คัดลอกลิงก์ Overlay ไปวางเป็น Browser Source แล้วกดทดสอบแจ้งเตือน</p><em>ใช้เวลา ~1 นาที</em></div>
+          <div class="step"><span class="n">ขั้นที่ 04</span><h3>รับโดเนท</h3><p>แชร์ลิงก์หน้าโดเนทให้แฟนๆ ยืนยันรายการแล้วแจ้งเตือนขึ้นจอทันที</p><em>พร้อมสตรีม</em></div>
+        </div>
+        <div class="rail-nav">
+          <button id="prev" aria-label="ก่อนหน้า">←</button>
+          <button id="next" aria-label="ถัดไป">→</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="container">
+      <div class="sec-head reveal">
+        <span class="eyebrow">ระบบ</span>
+        <h2>ทุกอย่าง <em class="hl">อยู่ในที่เดียว</em></h2>
+        <p>จัดการโดเนท แจ้งเตือน และการตั้งค่าจากแดชบอร์ดเดียว</p>
+      </div>
+      <div class="feats reveal">
+        <div class="feat"><div class="num">01</div><h3>⚡ แจ้งเตือนเรียลไทม์</h3><p>Overlay สำหรับ OBS ขึ้นข้อความพร้อมเสียงทันทีที่ยืนยันรายการ ระบบแจ้งเตือนส่งผ่าน SSE แทบไม่มีหน่วงเวลา และอ่านข้อความออกเสียงเป็นภาษาไทยได้</p></div>
+        <div class="feat"><div class="num">02</div><h3>💰 PromptPay QR ตามยอด</h3><p>สร้าง QR ตามยอดที่แฟนๆ กรอก สแกนจ่ายผ่านแอปธนาคารได้ทุกธนาคาร แนบสลิปเพื่อตรวจสอบได้ และหน้าจ่ายเงินอัปเดตสถานะทันทีที่ยืนยัน</p></div>
+        <div class="feat"><div class="num">03</div><h3>🛡️ จัดการครบในที่เดียว</h3><p>แดชบอร์ดสรุปรายได้แบบเรียลไทม์ กรองคำหยาบอัตโนมัติ ระบบระงับบัญชี และหลังบ้านแอดมินพร้อมกราฟสถิติทั้งระบบ</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="start" class="alt">
+    <div class="container narrow-c">
+      <div class="cta reveal">
+        <span class="eyebrow">ลงทะเบียน</span>
+        <h2 style="margin-top:12px">สมัคร <em class="hl">รับโดเนท</em></h2>
+        <p>สมัครฟรี ตั้งค่าเสร็จภายในไม่กี่นาที</p>
+        <a class="btn primary lg" href="/auth#register">สร้างบัญชี</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div>
+        <div class="brand" id="fbrand"></div>
+        <p>ระบบรับโดเนทสำหรับสตรีมเมอร์และครีเอเตอร์ เงินเข้าบัญชีผู้รับโดยตรง</p>
+      </div>
+      <div><h4>ระบบ</h4><a href="#process">ขั้นตอน</a><a href="#features">ฟีเจอร์</a><a href="#start">สมัคร</a></div>
+      <div><h4>บัญชี</h4><a href="/auth#login">เข้าสู่ระบบ</a><a href="/auth#register">สมัครสมาชิก</a><a href="/dashboard">แดชบอร์ด</a></div>
+      <div><h4>ข้อมูล</h4><a href="#features">ความปลอดภัย</a><a href="#process">วิธีใช้งาน</a></div>
+    </div>
+    <div class="foot-bottom" id="copy"></div>
+  </div>
+</footer>
+
+<script src="/js/common.js"></script>
+<script>
+(async () => {
+  await App.init({ landing: true });
+  document.getElementById('copy').textContent = '© ' + new Date().getFullYear() + ' ' + App.siteName + ' · สงวนลิขสิทธิ์';
+  const fb = document.getElementById('fbrand');
+  fb.innerHTML = App.logo; const sp = document.createElement('span'); sp.textContent = App.siteName; fb.appendChild(sp);
+
+  const rail = document.getElementById('rail');
+  const stepW = () => (rail.querySelector('.step').offsetWidth + 16);
+  document.getElementById('prev').onclick = () => rail.scrollBy({ left: -stepW(), behavior: 'smooth' });
+  document.getElementById('next').onclick = () => rail.scrollBy({ left: stepW(), behavior: 'smooth' });
+
+  try {
+    const s = await App.api('/api/public/stats');
+    App.countUp(document.getElementById('s1'), s.streamers);
+    App.countUp(document.getElementById('s2'), s.donations);
+    App.countUp(document.getElementById('s3'), s.total);
+  } catch (_) {}
+})();
+</script>
+</body>
+</html>

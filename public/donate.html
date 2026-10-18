@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>โดเนท</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="nav" id="nav"></header>
+<main class="center-page">
+  <div class="card pad-lg narrow" id="box">
+    <div class="empty" id="loading">กำลังโหลด...</div>
+
+    <div id="view-form" class="hidden">
+      <div class="prog-steps">
+        <span class="ps on" id="ps1"><i>1</i> กรอกข้อมูล</span><span class="pline"></span>
+        <span class="ps" id="ps2"><i>2</i> ชำระเงิน</span><span class="pline"></span>
+        <span class="ps" id="ps3"><i>3</i> สำเร็จ</span>
+      </div>
+      <div class="profile">
+        <div class="avatar" id="avatar"></div>
+        <h1 id="pname"></h1>
+        <p id="pbio"></p>
+      </div>
+      <div id="err" class="msg"></div>
+      <div id="notready" class="msg err show hidden">⚠️ ผู้รับยังไม่ได้ตั้งค่าช่องทางรับเงิน</div>
+      <form id="form">
+        <div class="field"><label>ชื่อของคุณ</label><input type="text" name="name" maxlength="30" placeholder="ผู้ไม่ประสงค์ออกนาม" autocomplete="nickname"></div>
+        <div class="field">
+          <label>จำนวนเงิน (บาท)</label>
+          <input type="number" name="amount" id="amount" min="1" max="50000" step="1" required inputmode="numeric">
+          <div class="chips" id="chips"></div>
+          <small id="minnote"></small>
+        </div>
+        <div class="field"><label>ข้อความถึงสตรีมเมอร์</label><textarea name="message" maxlength="200" placeholder="เขียนข้อความให้กำลังใจ (ไม่เกิน 200 ตัวอักษร)"></textarea></div>
+        <button class="btn primary block lg" id="submit" type="submit">สร้าง QR สำหรับชำระเงิน</button>
+      </form>
+    </div>
+
+    <div id="view-pay" class="qr-wrap hidden">
+      <div class="prog-steps">
+        <span class="ps on"><i>✓</i> กรอกข้อมูล</span><span class="pline"></span>
+        <span class="ps on" id="ps2b"><i>2</i> ชำระเงิน</span><span class="pline"></span>
+        <span class="ps" id="ps3b"><i>3</i> สำเร็จ</span>
+      </div>
+      <p class="muted">สแกนด้วยแอปธนาคารเพื่อโอนเงิน</p>
+      <img id="qr" alt="PromptPay QR">
+      <div class="amount-big"><span id="payamt"></span> บาท</div>
+      <div class="pay-status-wrap"><span class="status pending" id="paystatus">รอการชำระเงิน</span></div>
+      <p class="muted text-sm" style="margin-bottom:16px">โอนแล้วแนบสลิป (ไม่บังคับ) เพื่อให้ผู้รับตรวจสอบได้เร็วขึ้น — หน้านี้จะอัปเดตเองทันทีที่ผู้รับยืนยัน</p>
+      <div id="slipbox">
+        <input type="file" id="slip" accept="image/png,image/jpeg,image/webp" class="hidden">
+        <button class="btn block" id="slipbtn" type="button">📎 แนบสลิปการโอน</button>
+      </div>
+      <div id="err2" class="msg" style="margin-top:12px"></div>
+    </div>
+
+    <div id="view-done" class="qr-wrap hidden">
+      <div class="success-ring">✓</div>
+      <h2 style="margin:6px 0">ขอบคุณสำหรับการสนับสนุน!</h2>
+      <p class="muted" style="margin-bottom:18px">การโดเนทของคุณถูกยืนยันและแจ้งเตือนบนสตรีมแล้ว 🎉</p>
+      <button class="btn block" onclick="location.reload()">โดเนทอีกครั้ง</button>
+    </div>
+
+    <div id="view-404" class="empty hidden">
+      <div class="avatar" style="margin-bottom:14px">?</div>
+      <h2 style="margin-bottom:8px">ไม่พบผู้รับโดเนท</h2>
+      <p class="muted">ตรวจสอบลิงก์อีกครั้ง หรือ <a href="/" style="color:var(--accent2c);text-decoration:underline">กลับหน้าแรก</a></p>
+    </div>
+  </div>
+</main>
+<script src="/js/common.js"></script>
+<script>
+(async () => {
+  await App.init({});
+  const username = location.pathname.replace(/^\//, '').split('/')[0];
+  const $ = id => document.getElementById(id);
+  const views = ['view-form', 'view-pay', 'view-done', 'view-404'];
+  const show = v => { $('loading').classList.add('hidden'); views.forEach(x => $(x).classList.toggle('hidden', x !== v)); };
+
+  let s;
+  try { s = await App.api('/api/streamer/' + encodeURIComponent(username)); }
+  catch (_) { document.title = 'ไม่พบผู้รับโดเนท · ' + App.siteName; return show('view-404'); }
+
+  document.title = 'โดเนทให้ ' + s.displayName + ' · ' + App.siteName;
+  document.documentElement.style.setProperty('--accent', s.accent);
+  $('avatar').textContent = (s.displayName || '?').trim().charAt(0).toUpperCase();
+  $('pname').textContent = s.displayName;
+  $('pbio').textContent = s.bio || 'สนับสนุนผู้สร้างคอนเทนต์ที่คุณชื่นชอบ';
+  $('minnote').textContent = 'ขั้นต่ำ ' + App.money(s.minAmount) + ' บาท';
+  $('amount').min = s.minAmount; $('amount').value = Math.max(s.minAmount, 50);
+  [20, 50, 100, 300, 500, 1000].filter(v => v >= s.minAmount).forEach(v => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = App.money(v);
+    b.onclick = () => { $('amount').value = v; document.querySelectorAll('#chips .chip').forEach(c => c.classList.toggle('on', c === b)); };
+    $('chips').appendChild(b);
+  });
+  if (!s.ready) { $('notready').classList.remove('hidden'); $('submit').disabled = true; }
+  show('view-form');
+
+  let ref = null, timer = null, done = false;
+  function onPaid() {
+    if (done) return; done = true;
+    clearInterval(timer); if (es) es.close();
+    $('ps3').classList.add('on'); $('ps3b') && $('ps3b').classList.add('on');
+    show('view-done'); App.ping(1046);
+  }
+  function onRejected() {
+    if (done) return;
+    clearInterval(timer);
+    $('paystatus').className = 'status rejected'; $('paystatus').textContent = 'ผู้รับปฏิเสธรายการ';
+  }
+
+  let es = null;
+  function watch(ref) {
+    // หลัก: SSE เรียลไทม์ / สำรอง: poll ทุก 3 วินาที
+    es = App.sse('/api/donation/' + encodeURIComponent(ref) + '/stream', {
+      status: d => { if (d.status === 'paid') onPaid(); else if (d.status === 'rejected') onRejected(); }
+    });
+    es.onerror = () => {};
+    clearInterval(timer);
+    timer = setInterval(async () => {
+      try {
+        const d = await App.api('/api/donation/' + ref);
+        if (d.status === 'paid') onPaid();
+        else if (d.status === 'rejected') onRejected();
+      } catch (_) {}
+    }, 3000);
+  }
+
+  $('form').onsubmit = async e => {
+    e.preventDefault();
+    const btn = $('submit'); btn.disabled = true; App.msg($('err'), '');
+    try {
+      const body = Object.fromEntries(new FormData($('form')));
+      const d = await App.api('/api/streamer/' + encodeURIComponent(username) + '/donate', { method: 'POST', body });
+      ref = d.ref; $('qr').src = d.qr; $('payamt').textContent = App.money(d.amount);
+      show('view-pay'); watch(ref);
+    } catch (er) { App.msg($('err'), er.message); btn.disabled = false; }
+  };
+
+  $('slipbtn').onclick = () => $('slip').click();
+  $('slip').onchange = async () => {
+    const f = $('slip').files[0]; if (!f) return;
+    const fd = new FormData(); fd.append('slip', f);
+    App.msg($('err2'), ''); $('slipbtn').disabled = true; $('slipbtn').textContent = 'กำลังอัปโหลด...';
+    try {
+      await App.api('/api/donation/' + ref + '/slip', { method: 'POST', body: fd });
+      App.msg($('err2'), '✅ แนบสลิปแล้ว รอผู้รับยืนยันรายการ', 'ok');
+      $('slipbtn').textContent = 'เปลี่ยนสลิป';
+    } catch (er) { App.msg($('err2'), er.message); $('slipbtn').textContent = '📎 แนบสลิปการโอน'; }
+    $('slipbtn').disabled = false;
+  };
+})();
+</script>
+</body>
+</html>

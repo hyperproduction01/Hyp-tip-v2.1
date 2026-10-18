@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แอดมิน</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="nav" id="nav"></header>
+<main class="dash">
+  <div class="container">
+    <div class="dash-head">
+      <h1>🛡️ หลังบ้านแอดมิน</h1>
+      <span class="live-pill" id="live" title="การเชื่อมต่อแจ้งเตือนเรียลไทม์"><i></i> ระบบแจ้งเตือนสด</span>
+    </div>
+    <p class="dash-sub">ภาพรวมทั้งระบบ · จัดการผู้ใช้และรายการโดเนท · อัปเดตแบบเรียลไทม์</p>
+
+    <div class="dash-tabs" id="tabs">
+      <button data-t="overview" class="active"><span>ภาพรวม</span></button>
+      <button data-t="users"><span>ผู้ใช้</span></button>
+      <button data-t="donations"><span>รายการโดเนท</span></button>
+    </div>
+
+    <!-- overview -->
+    <div id="t-overview">
+      <div class="kpis">
+        <div class="kpi"><span>ผู้ใช้ทั้งหมด</span><b id="a-users">0</b><div class="k-ic"></div></div>
+        <div class="kpi"><span>ยอดรวมทั้งระบบ</span><b id="a-total">0 <small>บาท</small></b><div class="k-ic"></div></div>
+        <div class="kpi"><span>ยอดวันนี้</span><b id="a-today">0 <small>บาท</small></b><div class="k-ic"></div></div>
+        <div class="kpi"><span>รอตรวจสอบ</span><b id="a-pending">0</b><div class="k-ic"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="chart-head">
+          <div class="panel-title" id="ch-title"></div>
+          <div class="seg" id="ch-mode">
+            <button data-v="total" class="active">ยอดเงิน (฿)</button>
+            <button data-v="count">จำนวนรายการ</button>
+          </div>
+        </div>
+        <div id="chart"></div>
+        <div class="legend">
+          <span><i style="background:var(--accent-grad)"></i>รายการโดเนทที่สำเร็จ</span>
+          <span><i style="background:rgba(255,255,255,.2)"></i>ผู้ใช้ใหม่</span>
+        </div>
+      </div>
+
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="panel-title" id="feed-title" style="margin-bottom:6px"></div>
+          <div class="feed" id="feed"></div>
+          <div class="empty hidden" id="feed-empty">ยังไม่มีกิจกรรม</div>
+        </div>
+        <div class="card">
+          <div class="panel-title" id="top-title" style="margin-bottom:6px"></div>
+          <div id="top"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- users -->
+    <div id="t-users" class="hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search-box" id="usearch-wrap"></div>
+          <div class="seg" id="ufilter">
+            <button data-v="all" class="active">ทั้งหมด</button>
+            <button data-v="admins">แอดมิน</button>
+            <button data-v="banned">ถูกระงับ</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ผู้ใช้</th><th>อีเมล</th><th>สถานะ</th><th>รายการ</th><th>ยอดรวม</th><th>สมัครเมื่อ</th><th></th></tr></thead>
+            <tbody id="users"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="users-empty">ไม่พบผู้ใช้</div>
+      </div>
+    </div>
+
+    <!-- donations -->
+    <div id="t-donations" class="hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search-box" id="dsearch-wrap"></div>
+          <div class="seg" id="dfilter">
+            <button data-v="" class="active">ทั้งหมด</button>
+            <button data-v="pending">รอตรวจสอบ</button>
+            <button data-v="paid">สำเร็จ</button>
+            <button data-v="rejected">ปฏิเสธ</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>เวลา</th><th>ผู้รับ</th><th>ผู้โดเนท</th><th>ยอด</th><th>ข้อความ</th><th>สถานะ</th><th></th></tr></thead>
+            <tbody id="dons"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="dons-empty">ไม่พบรายการ</div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="/js/common.js"></script>
+<script>
+(async () => {
+  const me = await App.init({ title: 'แอดมิน' });
+  if (!me) return (location.href = '/auth#login');
+  if (me.role !== 'admin') return (location.href = '/dashboard');
+  const $ = id => document.getElementById(id);
+  const statusTh = { pending: 'รอตรวจสอบ', paid: 'สำเร็จ', rejected: 'ปฏิเสธ' };
+
+  $('ch-title').innerHTML = Activity() + '<span>กิจกรรม 30 วันล่าสุด</span>';
+  $('feed-title').innerHTML = Activity() + '<span>กิจกรรมล่าสุด</span>';
+  $('top-title').innerHTML = App.icon('trend', 17) + '<span>Top ผู้รับโดเนท</span>';
+  document.querySelectorAll('.kpi .k-ic')[0].innerHTML = App.icon('users', 18);
+  document.querySelectorAll('.kpi .k-ic')[1].innerHTML = App.icon('wallet', 18);
+  document.querySelectorAll('.kpi .k-ic')[2].innerHTML = App.icon('trend', 18);
+  document.querySelectorAll('.kpi .k-ic')[3].innerHTML = App.icon('clock', 18);
+  function Activity() { return App.icon('activity', 17); }
+
+  const mkSearch = (wrap, placeholder, onInput) => {
+    wrap.insertAdjacentHTML('afterbegin', App.icon('search', 16));
+    const inp = document.createElement('input');
+    inp.type = 'search'; inp.placeholder = placeholder; inp.autocomplete = 'off';
+    wrap.appendChild(inp);
+    let t; inp.oninput = () => { clearTimeout(t); t = setTimeout(() => onInput(inp.value.trim()), 350); };
+    return inp;
+  };
+  const mkSeg = (id, onPick) => document.querySelectorAll('#' + id + ' button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('#' + id + ' button').forEach(x => x.classList.toggle('active', x === b));
+    onPick(b.dataset.v);
+  });
+
+  window.goTab = t => {
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    ['overview', 'users', 'donations'].forEach(x => $('t-' + x).classList.toggle('hidden', x !== t));
+    if (t === 'users') loadUsers();
+    if (t === 'donations') loadDonations();
+    if (t === 'overview') loadStats();
+  };
+  const tabIcons = { overview: 'chart', users: 'users', donations: 'wallet' };
+  document.querySelectorAll('#tabs button').forEach(b => {
+    const label = b.textContent.trim();
+    b.innerHTML = App.icon(tabIcons[b.dataset.t], 15) + '<span>' + label + '</span>';
+    b.onclick = () => goTab(b.dataset.t);
+  });
+
+  /* ------------------------------ overview ------------------------------ */
+  let chMode = 'total';
+  async function loadStats() {
+    const d = await App.api('/api/admin/stats');
+    $('a-users').textContent = App.money(d.totals.users);
+    $('a-total').innerHTML = App.money(d.totals.paidTotal) + ' <small>บาท</small>';
+    $('a-today').innerHTML = App.money(d.totals.todayTotal) + ' <small>บาท</small>';
+    $('a-pending').textContent = App.money(d.totals.pending);
+
+    App.barChart($('chart'), d.daily.map(x => ({
+      label: x.date.slice(5),
+      value: chMode === 'total' ? x.total : x.donations,
+      value2: x.users,
+      tip: x.date + ' · ' + App.money(x.donations) + ' รายการ · ' + App.money(x.total) + ' บาท · ผู้ใช้ใหม่ ' + x.users
+    })), { fmt: v => App.money(v) + (chMode === 'total' ? ' บาท' : ' รายการ') });
+
+    const top = $('top'); top.replaceChildren();
+    if (!d.top.length) { top.innerHTML = '<div class="empty">ยังไม่มีข้อมูล</div>'; }
+    d.top.forEach((u, i) => {
+      const li = document.createElement('div'); li.className = 'li';
+      const left = document.createElement('div'); left.className = 'li-name';
+      const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = i + 1;
+      const nm = document.createElement('div');
+      nm.innerHTML = '<div style="font-weight:600"></div><small class="muted"></small>';
+      nm.firstChild.textContent = u.display_name;
+      nm.lastChild.textContent = '@' + u.username;
+      left.append(rank, nm);
+      const val = document.createElement('div'); val.className = 'li-val';
+      val.innerHTML = App.money(u.s) + ' <small>฿ · ' + App.money(u.c) + ' รายการ</small>';
+      li.append(left, val); top.appendChild(li);
+    });
+    loadFeed(d);
+  }
+
+  const feedCache = [];
+  function feedItem(ev) {
+    const it = document.createElement('div'); it.className = 'feed-item';
+    const ic = document.createElement('div'); ic.className = 'f-ic' + (ev.action === 'paid' ? ' ok' : '');
+    ic.innerHTML = App.icon(ev.action === 'paid' ? 'check' : ev.action === 'new' ? 'gift' : ev.action === 'ban' ? 'ban' : 'bell', 16);
+    const body = document.createElement('div'); body.style.flex = '1'; body.style.minWidth = '0';
+    const l1 = document.createElement('div');
+    if (ev.action === 'ban' || ev.action === 'unban') {
+      l1.innerHTML = '<b></b>';
+      l1.firstChild.textContent = (ev.action === 'ban' ? 'ระงับบัญชี @' : 'ปลดระงับ @') + ev.username;
+    } else {
+      l1.innerHTML = '<b></b><span style="color:var(--accent2c);font-weight:600"></span>';
+      l1.firstChild.textContent = '@' + ev.username + ' · ' + (ev.donor_name || '');
+      l1.lastChild.textContent = ' · ' + App.money(ev.amount) + ' ฿';
+    }
+    const l2 = document.createElement('small');
+    l2.textContent = ({ new: 'รายการใหม่', paid: 'ยืนยันแล้ว', rejected: 'ปฏิเสธ', ban: 'ถูกระงับ', unban: 'ปลดระงับ' }[ev.action] || '') + ' · ' + App.timeAgo(ev.ts || Date.now());
+    body.append(l1, l2);
+    it.append(ic, body);
+    return it;
+  }
+  function loadFeed(stats) {
+    const box = $('feed'); box.replaceChildren();
+    feedCache.length = 0;
+    const days = (stats?.daily || []).filter(x => x.donations > 0).slice(-5).reverse();
+    $('feed-empty').classList.toggle('hidden', days.length > 0);
+    for (const x of days) {
+      const it = document.createElement('div'); it.className = 'feed-item';
+      const ic = document.createElement('div'); ic.className = 'f-ic ok'; ic.innerHTML = App.icon('check', 16);
+      const body = document.createElement('div'); body.style.flex = '1';
+      const l1 = document.createElement('div');
+      l1.innerHTML = '<b></b><span style="color:var(--accent2c);font-weight:600"></span>';
+      l1.firstChild.textContent = 'วันที่ ' + x.date;
+      l1.lastChild.textContent = ' · ' + App.money(x.total) + ' ฿';
+      const l2 = document.createElement('small'); l2.textContent = x.donations + ' รายการ · ผู้ใช้ใหม่ ' + x.users;
+      body.append(l1, l2); it.append(ic, body); box.appendChild(it);
+    }
+    if (!days.length) box.innerHTML = '<div class="muted text-sm" style="padding:10px 0">กิจกรรมใหม่จะแสดงที่นี่แบบเรียลไทม์</div>';
+  }
+  function pushFeed(ev) {
+    feedCache.unshift(ev);
+    if (feedCache.length > 30) feedCache.pop();
+    const box = $('feed');
+    $('feed-empty').classList.add('hidden');
+    if (box.querySelector('.muted')) box.replaceChildren();
+    box.prepend(feedItem(ev));
+    while (box.children.length > 20) box.lastChild.remove();
+  }
+  mkSeg('ch-mode', v => { chMode = v; loadStats(); });
+
+  /* ------------------------------- users -------------------------------- */
+  let uQuery = '', uFilter = 'all';
+  mkSearch($('usearch-wrap'), 'ค้นหาอีเมล / username / ชื่อ...', v => { uQuery = v; loadUsers(); });
+  mkSeg('ufilter', v => { uFilter = v; loadUsers(); });
+
+  async function loadUsers() {
+    const q = new URLSearchParams({ q: uQuery, filter: uFilter });
+    const { users } = await App.api('/api/admin/users?' + q);
+    const tb = $('users'); tb.replaceChildren();
+    $('users-empty').classList.toggle('hidden', users.length > 0);
+    for (const u of users) {
+      const tr = document.createElement('tr');
+      const c1 = document.createElement('td');
+      const cu = document.createElement('div'); cu.className = 'cell-user';
+      const av = document.createElement('div'); av.className = 'mini-av'; av.textContent = (u.display_name || '?').trim().charAt(0).toUpperCase();
+      const info = document.createElement('div');
+      info.innerHTML = '<div style="font-weight:600"></div><small></small>';
+      info.firstChild.textContent = u.display_name;
+      info.lastChild.textContent = '@' + u.username;
+      cu.append(av, info); c1.appendChild(cu);
+      const c2 = document.createElement('td'); c2.className = 'muted'; c2.textContent = u.email;
+      const c3 = document.createElement('td');
+      const badges = [];
+      if (u.role === 'admin') badges.push('<span class="badge-role admin">แอดมิน</span>');
+      if (u.banned) badges.push('<span class="badge-role banned">ระงับ</span>');
+      if (!badges.length) badges.push('<span class="badge-role user">ปกติ</span>');
+      c3.innerHTML = badges.join(' ');
+      const c4 = document.createElement('td'); c4.textContent = App.money(u.paid_count) + (u.pending_count ? ' · ' + u.pending_count + ' รอ' : '');
+      const c5 = document.createElement('td'); c5.style.fontWeight = '600'; c5.style.color = 'var(--accent2c)'; c5.textContent = App.money(u.paid_total) + ' ฿';
+      const c6 = document.createElement('td'); c6.className = 'muted'; c6.textContent = App.dt(u.created_at);
+      const c7 = document.createElement('td');
+      const box = document.createElement('div'); box.className = 'actions-cell';
+      const btn = (label, cls, fn, icon) => {
+        const b = document.createElement('button'); b.className = 'btn sm ' + cls;
+        b.innerHTML = (icon ? App.icon(icon, 13) : '') + '<span>' + label + '</span>';
+        b.onclick = fn; box.appendChild(b);
+      };
+      btn('แก้ไข', '', () => editUser(u), 'edit');
+      if (u.id !== me.id) {
+        btn(u.banned ? 'ปลดระงับ' : 'ระงับ', u.banned ? 'ok' : 'danger', () => banUser(u), 'ban');
+        btn('ลบ', 'danger', () => deleteUser(u), 'trash');
+      }
+      c7.appendChild(box);
+      tr.append(c1, c2, c3, c4, c5, c6, c7); tb.appendChild(tr);
+    }
+  }
+
+  /* ------------------------------- modal -------------------------------- */
+  function modal(title, bodyEl, actions) {
+    const overlay = document.createElement('div'); overlay.className = 'modal';
+    const card = document.createElement('div'); card.className = 'modal-card';
+    const head = document.createElement('div'); head.className = 'modal-head';
+    const h = document.createElement('h3'); h.textContent = title;
+    const x = document.createElement('button'); x.className = 'modal-close'; x.innerHTML = App.icon('x', 16);
+    head.append(h, x);
+    const act = document.createElement('div'); act.className = 'modal-actions';
+    card.append(head, bodyEl, act); overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    x.onclick = close;
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    actions.forEach(a => {
+      const b = document.createElement('button'); b.className = 'btn ' + (a.cls || ''); b.textContent = a.label;
+      b.onclick = async () => { b.disabled = true; try { await a.fn(); close(); } catch (er) { App.toast(er.message, 'err'); b.disabled = false; } };
+      act.appendChild(b);
+    });
+    return close;
+  }
+  function field(label, name, value, attrs = '') {
+    const d = document.createElement('div'); d.className = 'field';
+    d.innerHTML = '<label></label><input type="text" name="' + name + '" ' + attrs + '>';
+    d.querySelector('label').textContent = label;
+    d.querySelector('input').value = value ?? '';
+    return d;
+  }
+
+  function editUser(u) {
+    const wrap = document.createElement('div');
+    const name = field('ชื่อที่แสดง', 'displayName', u.display_name, 'maxlength="40"');
+    const pp = field('PromptPay (เว้นว่างไว้ถ้าไม่แก้)', 'promptpayId', u.promptpay_id, 'inputmode="numeric" placeholder="0812345678"');
+    const roleSel = document.createElement('div'); roleSel.className = 'field';
+    roleSel.innerHTML = '<label>สิทธิ์</label><select name="role"><option value="user">ผู้ใช้ทั่วไป</option><option value="admin">แอดมิน</option></select>';
+    roleSel.querySelector('select').value = u.role;
+    const note = document.createElement('p'); note.className = 'muted text-sm'; note.textContent = '@' + u.username + ' · ' + u.email;
+    wrap.append(note, name, pp, roleSel);
+    modal('แก้ไขผู้ใช้ @' + u.username, wrap, [
+      { label: 'บันทึก', cls: 'primary', fn: async () => {
+        await App.api('/api/admin/users/' + u.id, { method: 'PATCH', body: {
+          displayName: name.querySelector('input').value,
+          promptpayId: pp.querySelector('input').value,
+          role: roleSel.querySelector('select').value
+        } });
+        App.toast('บันทึกแล้ว', 'ok'); loadUsers();
+      } }
+    ]);
+  }
+
+  function banUser(u) {
+    const wrap = document.createElement('p'); wrap.className = 'muted';
+    wrap.textContent = (u.banned ? 'ปลดระงับ' : 'ระงับ') + ' @' + u.username + ' (' + u.display_name + ')?' + (u.banned ? '' : ' บัญชีจะถูกออกจากระบบทันทีและใช้งานไม่ได้');
+    modal(u.banned ? 'ปลดระงับบัญชี' : 'ระงับบัญชี', wrap, [
+      { label: 'ยืนยัน', cls: u.banned ? 'ok' : 'danger', fn: async () => {
+        await App.api('/api/admin/users/' + u.id + '/ban', { method: 'POST', body: { banned: !u.banned } });
+        App.toast(u.banned ? 'ปลดระงับแล้ว' : 'ระงับบัญชีแล้ว', 'ok'); loadUsers();
+      } }
+    ]);
+  }
+
+  function deleteUser(u) {
+    const wrap = document.createElement('div');
+    const p = document.createElement('p'); p.className = 'muted'; p.style.marginBottom = '12px';
+    p.textContent = 'การลบจะลบบัญชี รายการโดเนททั้งหมด และสลิปของ @' + u.username + ' อย่างถาวร — พิมพ์ username เพื่อยืนยัน:';
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = u.username; inp.autocomplete = 'off';
+    wrap.append(p, inp);
+    modal('ลบบัญชีถาวร', wrap, [
+      { label: 'ลบถาวร', cls: 'danger', fn: async () => {
+        if (inp.value.trim().toLowerCase() !== u.username) throw new Error('พิมพ์ชื่อผู้ใช้ไม่ตรงกัน');
+        await App.api('/api/admin/users/' + u.id, { method: 'DELETE', body: { confirm: u.username } });
+        App.toast('ลบบัญชีแล้ว', 'ok'); loadUsers(); loadStats();
+      } }
+    ]);
+  }
+
+  /* ----------------------------- donations ------------------------------ */
+  let dQuery = '', dFilter = '';
+  mkSearch($('dsearch-wrap'), 'ค้นหาผู้โดเนท / ref / ผู้รับ...', v => { dQuery = v; loadDonations(); });
+  mkSeg('dfilter', v => { dFilter = v; loadDonations(); });
+
+  async function loadDonations() {
+    const q = new URLSearchParams({ q: dQuery, status: dFilter });
+    const { donations } = await App.api('/api/admin/donations?' + q);
+    const tb = $('dons'); tb.replaceChildren();
+    $('dons-empty').classList.toggle('hidden', donations.length > 0);
+    for (const d of donations) {
+      const tr = document.createElement('tr');
+      const c = txt => { const td = document.createElement('td'); td.textContent = txt; tr.appendChild(td); return td; };
+      c(App.dt(d.created_at));
+      const rc = c('@' + d.username); rc.className = 'muted';
+      const dc = c(d.donor_name); dc.style.fontWeight = '600';
+      const ac = c(App.money(d.amount) + ' ฿'); ac.style.color = 'var(--accent2c)'; ac.style.fontWeight = '600';
+      const mc = c((d.message || '-').slice(0, 60)); mc.style.maxWidth = '220px'; mc.className = 'muted text-sm';
+      const st = document.createElement('td'); const sp = document.createElement('span');
+      sp.className = 'status ' + d.status; sp.textContent = statusTh[d.status]; st.appendChild(sp);
+      const c7 = document.createElement('td');
+      const box = document.createElement('div'); box.className = 'actions-cell';
+      const btn = (label, cls, fn, icon) => {
+        const b = document.createElement('button'); b.className = 'btn sm ' + cls;
+        b.innerHTML = (icon ? App.icon(icon, 13) : '') + '<span>' + label + '</span>';
+        b.onclick = fn; box.appendChild(b);
+      };
+      if (d.has_slip) btn('สลิป', '', () => window.open('/api/admin/slip/' + d.id, '_blank'), 'eye');
+      if (d.status !== 'paid') btn('ยืนยัน', 'primary', () => dAct(d.id, 'approve'), 'check');
+      if (d.status !== 'rejected') btn('ปฏิเสธ', 'danger', () => dAct(d.id, 'reject'), 'x');
+      btn('ลบ', 'danger', () => dDelete(d), 'trash');
+      c7.appendChild(box);
+      tr.append(st, c7); tb.appendChild(tr);
+    }
+  }
+  async function dAct(id, what) {
+    try { await App.api('/api/admin/donations/' + id + '/' + what, { method: 'POST' }); App.toast('เรียบร้อย', 'ok'); loadDonations(); loadStats(); }
+    catch (e) { App.toast(e.message, 'err'); }
+  }
+  function dDelete(d) {
+    const wrap = document.createElement('p'); wrap.className = 'muted';
+    wrap.textContent = 'ลบรายการ #' + d.ref + ' ของ ' + d.donor_name + ' (' + App.money(d.amount) + ' ฿)?';
+    modal('ลบรายการโดเนท', wrap, [
+      { label: 'ลบ', cls: 'danger', fn: async () => {
+        await App.api('/api/admin/donations/' + d.id, { method: 'DELETE' });
+        App.toast('ลบรายการแล้ว', 'ok'); loadDonations(); loadStats();
+      } }
+    ]);
+  }
+
+  /* ------------------------------ realtime ------------------------------ */
+  const live = $('live');
+  App.sse('/api/dashboard/stream', {
+    'admin-donation': ev => {
+      pushFeed(ev);
+      if (ev.action === 'new') { App.toast(`🎉 โดเนทใหม่ที่ @${ev.username} · ${App.money(ev.amount)} ฿`, 'ok'); App.ping(1046); }
+      else App.ping(660);
+      const t = document.querySelector('#tabs button.active')?.dataset.t;
+      if (t === 'users') loadUsers();
+      if (t === 'donations') loadDonations();
+      if (t === 'overview') loadStats();
+    },
+    'admin-user': ev => { pushFeed(ev); loadUsers(); }
+  }).onopen = () => live.classList.remove('off');
+  addEventListener('offline', () => live.classList.add('off'));
+
+  loadStats();
+})();
+</script>
+</body>
+</html>
